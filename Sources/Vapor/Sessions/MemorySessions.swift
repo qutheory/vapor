@@ -1,17 +1,17 @@
 /// Simple in-memory sessions implementation.
 public struct MemorySessions: SessionDriver {
-    public let storage: Storage
+    internal let storage: Storage
     
-    public final class Storage {
-        public var sessions: [SessionID: SessionData]
-        public let queue: DispatchQueue
-        public init() {
+    internal final class Storage {
+        var sessions: [SessionID: SessionData]
+        let queue: DispatchQueue
+        init() {
             self.sessions = [:]
             self.queue = DispatchQueue(label: "MemorySessions.Storage")
         }
     }
 
-    public init(storage: Storage) {
+    internal init(storage: Storage) {
         self.storage = storage
     }
 
@@ -48,6 +48,21 @@ public struct MemorySessions: SessionDriver {
         for request: Request
     ) -> EventLoopFuture<Void> {
         self.storage.queue.sync { self.storage.sessions[sessionID] = nil }
+        return request.eventLoop.makeSucceededFuture(())
+    }
+    
+    // Horribly unperformant. Avoid using.
+    public func deleteExpiredSessions(
+        before: Date,
+        on request: Request
+    ) -> EventLoopFuture<Void> {
+        self.storage.queue.sync {
+            self.storage.sessions.forEach { session in
+                if session.1.expiration < before {
+                    self.storage.sessions[session.0] = nil
+                }
+            }
+        }
         return request.eventLoop.makeSucceededFuture(())
     }
     

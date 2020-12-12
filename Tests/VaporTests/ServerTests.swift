@@ -516,6 +516,27 @@ final class ServerTests: XCTestCase {
         XCTAssertEqual(b.status, .ok)
     }
 
+    // https://github.com/vapor/vapor/issues/2464
+    func testCompressed204() throws {
+        let app = Application(.testing)
+        defer { app.shutdown() }
+
+        app.http.server.configuration.responseCompression = .enabled
+
+        app.get("content") { _ in "hello" }
+        app.get("no-content") { _ in HTTPStatus.noContent }
+
+        try app.testable(method: .running).test(.GET, "content", beforeRequest: { req in
+            req.headers.acceptEncoding = [.gzip]
+        }, afterResponse: { res in
+            XCTAssertEqual(res.headers.contentEncoding, .gzip)
+        }).test(.GET, "no-content", beforeRequest: { req in
+            req.headers.acceptEncoding = [.gzip]
+        }, afterResponse: { res in
+            XCTAssertEqual(res.headers.contentEncoding, nil)
+        })
+    }
+  
     func testStartWithValidSocketFile() throws {
         let socketPath = "/tmp/\(UUID().uuidString).vapor.socket"
 
@@ -650,6 +671,15 @@ final class ServerTests: XCTestCase {
         )
         let a = try app.http.client.shared.execute(request: request).wait()
         XCTAssertEqual(a.headers.connection, .keepAlive)
+    }
+
+    func testHTTPStatusClasses() throws {
+        XCTAssertEqual(HTTPStatus.switchingProtocols.class, .informational)
+        XCTAssertEqual(HTTPStatus.created.class, .successful)
+        XCTAssertEqual(HTTPStatus.movedPermanently.class, .redirection)
+        XCTAssertEqual(HTTPStatus.badRequest.class, .clientError)
+        XCTAssertEqual(HTTPStatus.internalServerError.class, .serverError)
+        XCTAssertNil(HTTPStatus.custom(code: 42, reasonPhrase: "Meaning of life").class)
     }
 
     override class func setUp() {

@@ -44,6 +44,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
                     headersNoUpdate: head.headers,
                     remoteAddress: context.channel.remoteAddress,
                     logger: self.application.logger,
+                    byteBufferAllocator: context.channel.allocator,
                     on: context.channel.eventLoop
                 )
                 switch head.version.major {
@@ -63,7 +64,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
                 if request.headers.first(name: .contentLength) == buffer.readableBytes.description {
                     self.requestState = .awaitingEnd(request, buffer)
                 } else {
-                    let stream = Request.BodyStream(on: context.eventLoop)
+                    let stream = Request.BodyStream(on: context.eventLoop, byteBufferAllocator: context.channel.allocator)
                     request.bodyStorage = .stream(stream)
                     self.requestState = .streamingBody(stream)
                     context.fireChannelRead(self.wrapInboundOut(request))

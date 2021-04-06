@@ -66,7 +66,7 @@ public final class Request: CustomStringConvertible {
         }
 
         func encode<E>(_ encodable: E, using encoder: ContentEncoder) throws where E : Encodable {
-            var body = ByteBufferAllocator().buffer(capacity: 0)
+            var body = self.request.byteBufferAllocator.buffer(capacity: 0)
             try encoder.encode(encodable, to: &body, headers: &self.request.headers)
             self.request.bodyStorage = .collected(body)
         }
@@ -82,7 +82,7 @@ public final class Request: CustomStringConvertible {
         func encode<C>(_ content: C, using encoder: ContentEncoder) throws where C : Content {
             var content = content
             try content.beforeEncode()
-            var body = ByteBufferAllocator().buffer(capacity: 0)
+            var body = self.request.byteBufferAllocator.buffer(capacity: 0)
             try encoder.encode(content, to: &body, headers: &self.request.headers)
             self.request.bodyStorage = .collected(body)
         }
@@ -148,6 +148,8 @@ public final class Request: CustomStringConvertible {
     public var parameters: Parameters
 
     public var storage: Storage
+
+    public var byteBufferAllocator: ByteBufferAllocator
     
     public convenience init(
         application: Application,
@@ -158,6 +160,7 @@ public final class Request: CustomStringConvertible {
         collectedBody: ByteBuffer? = nil,
         remoteAddress: SocketAddress? = nil,
         logger: Logger = .init(label: "codes.vapor.request"),
+        byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         on eventLoop: EventLoop
     ) {
         self.init(
@@ -168,6 +171,7 @@ public final class Request: CustomStringConvertible {
             headersNoUpdate: headers,
             collectedBody: collectedBody,
             logger: logger,
+            byteBufferAllocator: byteBufferAllocator,
             on: eventLoop
         )
         if let body = collectedBody {
@@ -184,6 +188,7 @@ public final class Request: CustomStringConvertible {
         collectedBody: ByteBuffer? = nil,
         remoteAddress: SocketAddress? = nil,
         logger: Logger = .init(label: "codes.vapor.request"),
+        byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         on eventLoop: EventLoop
     ) {
         self.application = application
@@ -203,5 +208,6 @@ public final class Request: CustomStringConvertible {
         self.isKeepAlive = true
         self.logger = logger
         self.logger[metadataKey: "request-id"] = .string(UUID().uuidString)
+        self.byteBufferAllocator = byteBufferAllocator
     }
 }

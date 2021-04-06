@@ -42,15 +42,15 @@ public final class ErrorMiddleware: Middleware {
             req.logger.report(error: error)
             
             // create a Response with appropriate status
-            let response = Response(status: status, headers: headers)
+            let response = Response(status: status, headers: headers, byteBufferAllocator: req.byteBufferAllocator)
             
             // attempt to serialize the error to json
             do {
                 let errorResponse = ErrorResponse(error: true, reason: reason)
-                response.body = try .init(data: JSONEncoder().encode(errorResponse))
+                response.body = try .init(data: JSONEncoder().encode(errorResponse), byteBufferAllocator: req.byteBufferAllocator)
                 response.headers.replaceOrAdd(name: .contentType, value: "application/json; charset=utf-8")
             } catch {
-                response.body = .init(string: "Oops: \(error)")
+                response.body = .init(string: "Oops: \(error)", byteBufferAllocator: req.byteBufferAllocator)
                 response.headers.replaceOrAdd(name: .contentType, value: "text/plain; charset=utf-8")
             }
             return response

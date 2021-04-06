@@ -59,7 +59,7 @@ extension Response: ResponseEncodable {
 extension StaticString: ResponseEncodable {
     /// See `HTTPResponseEncodable`.
     public func encodeResponse(for request: Request) -> EventLoopFuture<Response> {
-        let res = Response(headers: staticStringHeaders, body: .init(staticString: self))
+        let res = Response(headers: staticStringHeaders, body: .init(staticString: self, byteBufferAllocator: request.byteBufferAllocator), byteBufferAllocator: request.byteBufferAllocator)
         return request.eventLoop.makeSucceededFuture(res)
     }
 }
@@ -67,7 +67,7 @@ extension StaticString: ResponseEncodable {
 extension String: ResponseEncodable {
     /// See `HTTPResponseEncodable`.
     public func encodeResponse(for request: Request) -> EventLoopFuture<Response> {
-        let res = Response(headers: staticStringHeaders, body: .init(string: self))
+        let res = Response(headers: staticStringHeaders, body: .init(string: self, byteBufferAllocator: request.byteBufferAllocator), byteBufferAllocator: request.byteBufferAllocator)
         return request.eventLoop.makeSucceededFuture(res)
     }
 }

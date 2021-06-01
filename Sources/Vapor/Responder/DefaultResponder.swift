@@ -75,7 +75,6 @@ internal struct DefaultResponder: Responder {
                 ofKind: .server,
                 at: startTime
             )
-            request.baggage = span.baggage
             request.route = cachedRoute.route
             response = cachedRoute.responder.respond(to: request)
         } else {
@@ -85,7 +84,6 @@ internal struct DefaultResponder: Responder {
                 ofKind: .server,
                 at: startTime
             )
-            request.baggage = span.baggage
             response = self.notFoundResponder.respond(to: request)
         }
 

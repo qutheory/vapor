@@ -231,6 +231,24 @@ public func routes(_ app: Application) throws {
             return promise.futureResult
         }
     }
+
+    let asyncRoutes = app.grouped("async").grouped(TestAsyncMiddleware())
+    asyncRoutes.get("client") { req async throws -> String in
+        let response = try await req.client.get("https://www.google.com")
+        guard let body = response.body else {
+            throw Abort(.internalServerError)
+        }
+        return String(buffer: body)
+    }
+
+    func asyncRouteTester(_ req: Request) async throws -> String {
+        let response = try await req.client.get("https://www.google.com")
+        guard let body = response.body else {
+            throw Abort(.internalServerError)
+        }
+        return String(buffer: body)
+    }
+    asyncRoutes.get("client2", use: asyncRouteTester)
 }
 
 struct TestError: AbortError, DebuggableError {
@@ -261,5 +279,12 @@ struct TestError: AbortError, DebuggableError {
             range: range
         )
         self.stackTrace = stackTrace
+    }
+}
+
+struct TestAsyncMiddleware: AsyncMiddleware {
+    func respond(to request: Request, chainingTo next: Responder) async throws -> Response {
+        request.logger.debug("In async middleware")
+        return try await next.respond(to: request)
     }
 }
